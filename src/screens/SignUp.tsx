@@ -1,4 +1,15 @@
-import { Center, Heading, Image, ScrollView, Text, VStack } from '@gluestack-ui/themed';
+import {
+  Center,
+  Heading,
+  Image,
+  ScrollView,
+  Text,
+  Toast,
+  ToastDescription,
+  ToastTitle,
+  useToast,
+  VStack,
+} from '@gluestack-ui/themed';
 import BackgroundImg from '@assets/background.png';
 import { Logo } from '@components/Logo';
 import { Input } from '@components/Input';
@@ -9,6 +20,11 @@ import { Controller, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { yupResolver } from '@hookform/resolvers/yup';
+import { api } from '@services/api';
+import axios from 'axios';
+import { Alert } from 'react-native';
+import { AppError } from '@utils/AppError';
+import { useState } from 'react';
 
 type FormDataProps = {
   name: string;
@@ -31,6 +47,9 @@ const signUpSchema = yup.object({
 });
 
 export function SignUp() {
+  const toast = useToast();
+  const [toastId, setToastId] = useState(0);
+
   const {
     control,
     handleSubmit,
@@ -38,7 +57,6 @@ export function SignUp() {
   } = useForm<FormDataProps>({
     resolver: yupResolver(signUpSchema),
   });
-  console.log('🚀 ~ SignUp ~ errors:', errors);
 
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
 
@@ -46,23 +64,34 @@ export function SignUp() {
     console.log('🚀 ~ handleSignUp ~ data:', { name, email, password });
 
     try {
-      const response = await fetch('http://192.168.1.104:3333/users', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          password: password,
-        }),
-      });
+      console.log('🚀 ~ handleSignUp ~ try');
+      const response = await api.post('/users', { name, email, password });
 
-      const data = await response.json();
-      console.log('🚀 ~ handleSignUp ~ data:', data);
+      console.log('🚀 ~ handleSignUp ~ data:', response.data);
     } catch (error) {
       console.log('🚀 ~ handleSignUp ~ error:', error);
+      const isAppError = error instanceof AppError;
+      const description = isAppError
+        ? error.message
+        : 'Não foi possível criar a conta. Tente novamente mais tarde.';
+
+      const newId = Math.random();
+      setToastId(newId);
+
+      toast.show({
+        id: String(newId),
+        placement: 'top',
+        containerStyle: { mt: 50, color: 'white' },
+        duration: 3000,
+        render: ({ id }) => {
+          const uniqueToastId = 'toast-' + id;
+          return (
+            <Toast nativeID={uniqueToastId} action="warning" variant="solid">
+              <ToastDescription>{description}</ToastDescription>
+            </Toast>
+          );
+        },
+      });
     }
   }
 
