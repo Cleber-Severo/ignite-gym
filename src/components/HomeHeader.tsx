@@ -1,25 +1,21 @@
 import { Heading, HStack, Icon, Text, VStack } from '@gluestack-ui/themed';
 import { UserPhoto } from './UserPhoto';
 import { LogOut } from 'lucide-react-native';
-import { useEffect } from 'react';
 import { useAuth } from '@hooks/useAuth';
+
+import defaultUserPhotoImg from '../assets/userPhotoDefault.png';
 
 export function HomeHeader() {
   const { user } = useAuth();
+  console.log('🚀 ~ HomeHeader ~ user:', user);
 
   return (
     <HStack bg="$gray600" pt="$16" pb="$5" px="$8" alignItems="center" gap="$4">
       <UserPhoto
-        source={{ uri: 'https://github.com/Cleber-severo.png' }}
+        source={user.avatar ? { uri: user.avatar } : defaultUserPhotoImg}
         alt="Imagem do usuário"
         w="$16"
         h="$16"
-        onError={error => {
-          console.log('UserPhoto error:', error);
-        }}
-        onLoad={() => {
-          console.log('UserPhoto loaded successfully');
-        }}
       />
 
       <VStack flex={1}>
