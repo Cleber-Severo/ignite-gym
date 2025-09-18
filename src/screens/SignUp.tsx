@@ -3,6 +3,7 @@ import {
   Heading,
   Image,
   ScrollView,
+  set,
   Text,
   Toast,
   ToastDescription,
@@ -25,6 +26,7 @@ import axios from 'axios';
 import { Alert } from 'react-native';
 import { AppError } from '@utils/AppError';
 import { useState } from 'react';
+import { useAuth } from '@hooks/useAuth';
 
 type FormDataProps = {
   name: string;
@@ -49,6 +51,9 @@ const signUpSchema = yup.object({
 export function SignUp() {
   const toast = useToast();
   const [toastId, setToastId] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn } = useAuth();
 
   const {
     control,
@@ -61,15 +66,15 @@ export function SignUp() {
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
 
   async function handleSignUp({ name, email, password }: FormDataProps) {
-    console.log('🚀 ~ handleSignUp ~ data:', { name, email, password });
-
     try {
-      console.log('🚀 ~ handleSignUp ~ try');
-      const response = await api.post('/users', { name, email, password });
+      setIsLoading(true);
 
-      console.log('🚀 ~ handleSignUp ~ data:', response.data);
+      await api.post('/users', { name, email, password });
+
+      await signIn(email, password);
     } catch (error) {
-      console.log('🚀 ~ handleSignUp ~ error:', error);
+      setIsLoading(false);
+
       const isAppError = error instanceof AppError;
       const description = isAppError
         ? error.message
@@ -184,7 +189,12 @@ export function SignUp() {
               )}
             />
 
-            <Button title="Criar e acessar" onPress={handleSubmit(handleSignUp)} />
+            <Button
+              title="Criar e acessar"
+              onPress={handleSubmit(handleSignUp)}
+              isDisabled={isLoading}
+              isLoading={isLoading}
+            />
           </Center>
 
           <Button
