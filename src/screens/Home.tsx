@@ -18,7 +18,7 @@ export function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [exercices, setExercises] = useState<ExerciseDTO[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
-  const [groupSelected, setGroupSelected] = useState('costas');
+  const [groupSelected, setGroupSelected] = useState('antebraço');
 
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 

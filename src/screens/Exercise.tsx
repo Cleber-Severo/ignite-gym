@@ -13,6 +13,7 @@ import { ToastMessage } from '@components/ToastMessage';
 import { api } from '@services/api';
 import { useEffect, useState } from 'react';
 import { ExerciseDTO } from '@dtos/ExerciseDTO';
+import { Loading } from '@components/Loading';
 
 type RouteParamsProps = {
   exerciseId: string;
@@ -21,6 +22,7 @@ type RouteParamsProps = {
 export function Exercise() {
   const toast = useToast();
 
+  const [isLoading, setIsLoading] = useState(true);
   const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
@@ -33,6 +35,7 @@ export function Exercise() {
 
   async function fetchExerciseDetails() {
     try {
+      setIsLoading(true);
       const response = await api.get(`/exercises/${exerciseId}`);
       setExercise(response.data);
     } catch (error) {
@@ -55,6 +58,8 @@ export function Exercise() {
           ),
         });
       }
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -69,18 +74,22 @@ export function Exercise() {
           <Icon as={ArrowLeft} color="$green500" size="xl" />
         </TouchableOpacity>
 
-        <HStack justifyContent="space-between" alignItems="center" mt="$4" mb="$8">
-          <Heading color="$gray100" fontFamily="$heading" fontSize="$lg" flexShrink={1}>
-            {exercise.name}
-          </Heading>
-          <HStack alignItems="center">
-            <BodyIcon />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <HStack justifyContent="space-between" alignItems="center" mt="$4" mb="$8">
+            <Heading color="$gray100" fontFamily="$heading" fontSize="$lg" flexShrink={1}>
+              {exercise.name}
+            </Heading>
+            <HStack alignItems="center">
+              <BodyIcon />
 
-            <Text color="$gray200" ml="$1" textTransform="capitalize">
-              {exercise.group}
-            </Text>
+              <Text color="$gray200" ml="$1" textTransform="capitalize">
+                {exercise.group}
+              </Text>
+            </HStack>
           </HStack>
-        </HStack>
+        )}
       </VStack>
 
       <ScrollView
