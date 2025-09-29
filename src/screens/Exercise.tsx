@@ -7,21 +7,60 @@ import { BodyIcon } from '@components/BodyIcon';
 import { SeriesIcon } from '@components/SeriesIcon';
 import { RepetitionsIcon } from '@components/RepetitionsIcon';
 import { Button } from '@components/Button';
+import { useToast } from '@gluestack-ui/themed';
+import { AppError } from '@utils/AppError';
+import { ToastMessage } from '@components/ToastMessage';
+import { api } from '@services/api';
+import { useEffect, useState } from 'react';
+import { ExerciseDTO } from '@dtos/ExerciseDTO';
 
 type RouteParamsProps = {
   exerciseId: string;
 };
 
 export function Exercise() {
+  const toast = useToast();
+
+  const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
   const route = useRoute();
   const { exerciseId } = route.params as RouteParamsProps;
-  console.log('🚀 ~ Exercise ~ exerciseId:', exerciseId);
 
   function handleGoBack() {
     navigation.goBack();
   }
+
+  async function fetchExerciseDetails() {
+    try {
+      const response = await api.get(`/exercises/${exerciseId}`);
+      setExercise(response.data);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível carregar os detalhes do exercício.';
+
+      if (isAppError) {
+        toast.show({
+          placement: 'top',
+          bgColor: '$red500',
+          render: ({ id }) => (
+            <ToastMessage
+              id={id}
+              action="error"
+              title={title}
+              onClose={() => toast.close(id)}
+            />
+          ),
+        });
+      }
+    }
+  }
+
+  useEffect(() => {
+    fetchExerciseDetails();
+  }, [exerciseId]);
 
   return (
     <VStack flex={1}>
@@ -32,13 +71,13 @@ export function Exercise() {
 
         <HStack justifyContent="space-between" alignItems="center" mt="$4" mb="$8">
           <Heading color="$gray100" fontFamily="$heading" fontSize="$lg" flexShrink={1}>
-            Puxada frontal
+            {exercise.name}
           </Heading>
           <HStack alignItems="center">
             <BodyIcon />
 
             <Text color="$gray200" ml="$1" textTransform="capitalize">
-              Costas
+              {exercise.group}
             </Text>
           </HStack>
         </HStack>
@@ -49,31 +88,32 @@ export function Exercise() {
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         <VStack p="$8">
-          <Image
-            source={{
-              uri: 'https://treinomestre.com.br/wp-content/uploads/2014/01/remada-baixa-treino-costas.jpg',
-            }}
-            alt="Exercício"
-            mb="$3"
-            resizeMode="cover"
-            rounded="$lg"
-            w="$full"
-            h="$80"
-          />
+          <Box rounded="$md" mb="$3" overflow="hidden">
+            <Image
+              source={{
+                uri: `${api.defaults.baseURL}/exercise/demo/${exercise.demo}`,
+              }}
+              alt="Exercício"
+              resizeMode="cover"
+              rounded="$lg"
+              w="$full"
+              h="$80"
+            />
+          </Box>
 
           <Box bg="$gray600" rounded="$md" pb="$4" px="$4">
             <HStack alignItems="center" justifyContent="space-around" mb="$6" mt="$5">
               <HStack>
                 <SeriesIcon />
                 <Text color="$gray200" ml="$2">
-                  3 séries
+                  {exercise.series} séries
                 </Text>
               </HStack>
 
               <HStack>
                 <RepetitionsIcon />
                 <Text color="$gray200" ml="$2">
-                  12 repetições
+                  {exercise.repetitions} repetições
                 </Text>
               </HStack>
             </HStack>
