@@ -9,11 +9,28 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { useState } from 'react';
 import { ToastMessage } from '@components/ToastMessage';
+import { Controller, useForm } from 'react-hook-form';
+import { useAuth } from '@hooks/useAuth';
+
+type FormDataProps = {
+  name: string;
+  email: string;
+  old_password: string;
+  password: string;
+  confirm_password: string;
+};
 
 export function Profile() {
   const [userPhoto, setUserPhoto] = useState('https://github.com/Cleber-severo.png');
 
   const toast = useToast();
+  const { user } = useAuth();
+  const { control, handleSubmit } = useForm<FormDataProps>({
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+    },
+  });
 
   async function handleUserPhotoSelect() {
     try {
@@ -57,6 +74,10 @@ export function Profile() {
     }
   }
 
+  async function handleProfileUpdate(data: FormDataProps) {
+    console.log(data);
+  }
+
   return (
     <VStack flex={1}>
       <ScreenHeader title="Perfil" />
@@ -71,8 +92,26 @@ export function Profile() {
           </TouchableOpacity>
 
           <Center w="$full" gap="$4">
-            <Input placeholder="Nome" bg="$gray600" />
-            <Input value="teste@email.com" bg="$gray600" isReadOnly />
+            <Controller
+              control={control}
+              name="name"
+              render={({ field: { value, onChange } }) => (
+                <Input
+                  placeholder="Nome"
+                  bg="$gray600"
+                  onChangeText={onChange}
+                  value={value}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { value, onChange } }) => (
+                <Input bg="$gray600" isReadOnly onChangeText={onChange} value={value} />
+              )}
+            />
           </Center>
 
           <Heading
@@ -87,11 +126,46 @@ export function Profile() {
           </Heading>
 
           <Center w="$full" gap="$4">
-            <Input placeholder="Senha antiga" bg="$gray600" secureTextEntry />
-            <Input placeholder="Nova senha" bg="$gray600" secureTextEntry />
-            <Input placeholder="Confirme a nova senha" bg="$gray600" secureTextEntry />
+            <Controller
+              control={control}
+              name="old_password"
+              render={({ field: { onChange } }) => (
+                <Input
+                  placeholder="Senha antiga"
+                  bg="$gray600"
+                  secureTextEntry
+                  onChangeText={onChange}
+                />
+              )}
+            />
 
-            <Button title="Atualizar" />
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange } }) => (
+                <Input
+                  placeholder="Nova senha"
+                  bg="$gray600"
+                  secureTextEntry
+                  onChangeText={onChange}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="confirm_password"
+              render={({ field: { onChange } }) => (
+                <Input
+                  placeholder="Confirme a nova senha"
+                  bg="$gray600"
+                  secureTextEntry
+                  onChangeText={onChange}
+                />
+              )}
+            />
+
+            <Button title="Atualizar" onPress={handleSubmit(handleProfileUpdate)} />
           </Center>
         </Center>
       </ScrollView>
