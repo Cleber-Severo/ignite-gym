@@ -1,4 +1,13 @@
-import { Box, Heading, HStack, Icon, Image, Text, VStack } from '@gluestack-ui/themed';
+import {
+  Box,
+  Heading,
+  HStack,
+  Icon,
+  Image,
+  set,
+  Text,
+  VStack,
+} from '@gluestack-ui/themed';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppNavigatorRoutesProps } from '@routes/app.routes';
 import { ArrowLeft } from 'lucide-react-native';
@@ -23,6 +32,7 @@ export function Exercise() {
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [sendingRegister, setSendingRegister] = useState(false);
   const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
@@ -60,6 +70,51 @@ export function Exercise() {
       }
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleExerciseHistoryRegister() {
+    try {
+      setSendingRegister(true);
+
+      await api.post('/history', { exercise_id: exerciseId });
+
+      toast.show({
+        placement: 'top',
+        bgColor: '$red500',
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            action="success"
+            title={'Exercício registrado no seu histórico!'}
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+
+      navigation.navigate('history');
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível registrar o exercício.';
+
+      if (isAppError) {
+        toast.show({
+          placement: 'top',
+          bgColor: '$red500',
+          render: ({ id }) => (
+            <ToastMessage
+              id={id}
+              action="error"
+              title={title}
+              onClose={() => toast.close(id)}
+            />
+          ),
+        });
+      }
+    } finally {
+      setSendingRegister(false);
     }
   }
 
@@ -127,7 +182,11 @@ export function Exercise() {
               </HStack>
             </HStack>
 
-            <Button title="Marcar como realizado" onPress={() => {}} />
+            <Button
+              title="Marcar como realizado"
+              onPress={handleExerciseHistoryRegister}
+              isLoading={sendingRegister}
+            />
           </Box>
         </VStack>
       </ScrollView>
