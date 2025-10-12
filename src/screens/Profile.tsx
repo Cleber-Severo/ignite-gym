@@ -15,6 +15,7 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { api } from '@services/api';
 import { AppError } from '@utils/AppError';
+import defaultUserPhotoImg from '../assets/userPhotoDefault.png';
 
 type FormDataProps = {
   name: string;
@@ -109,11 +110,20 @@ export function Profile() {
         const userPhotoUploadForm = new FormData();
         userPhotoUploadForm.append('avatar', photoFile);
 
-        await api.patch('/users/avatar', userPhotoUploadForm, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const avatarUpdatedResponse = await api.patch(
+          '/users/avatar',
+          userPhotoUploadForm,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        const userUpdated = user;
+        userUpdated.avatar = avatarUpdatedResponse.data.avatar;
+
+        updateUserProfile(userUpdated);
 
         toast.show({
           placement: 'top',
@@ -182,7 +192,15 @@ export function Profile() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 36 }}>
         <Center mt="$6" px="$10">
-          <UserPhoto source={{ uri: userPhoto }} alt="Profile image" size="lg" />
+          <UserPhoto
+            source={
+              user.avatar
+                ? { uri: `${api.defaults.baseURL}/avatar/${user.avatar}` }
+                : defaultUserPhotoImg
+            }
+            alt="Profile image"
+            size="lg"
+          />
           <TouchableOpacity onPress={handleUserPhotoSelect}>
             <Text color="$green500" fontFamily="$heading" fontSize="$md" mt="$2" mb="$8">
               Alterar foto
