@@ -11,25 +11,56 @@ import { useState } from 'react';
 import { ToastMessage } from '@components/ToastMessage';
 import { Controller, useForm } from 'react-hook-form';
 import { useAuth } from '@hooks/useAuth';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { api } from '@services/api';
+import { AppError } from '@utils/AppError';
 
 type FormDataProps = {
   name: string;
   email: string;
-  old_password: string;
-  password: string;
-  confirm_password: string;
+  old_password?: string;
+  password?: string;
+  confirm_password?: string;
 };
+
+const profileSchema = yup.object({
+  name: yup.string().required('Informe o nome.'),
+  email: yup.string().required('Informe o e-mail').email('E-mail inválido'),
+  old_password: yup.string(),
+  password: yup
+    .string()
+    .transform(value => (!!value ? value : undefined))
+    .concat(yup.string().min(6, 'A senha deve ter pelo menos 6 dígitos.')),
+  confirm_password: yup
+    .string()
+    .transform(value => (!!value ? value : undefined))
+    .when('password', {
+      is: (field: any) => !!field,
+      then: schema =>
+        schema
+          .required('Informe a confirmação da senha.')
+          .oneOf([yup.ref('password')], 'A confirmação da senha não confere.'),
+      otherwise: schema => schema,
+    }),
+});
 
 export function Profile() {
   const [userPhoto, setUserPhoto] = useState('https://github.com/Cleber-severo.png');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const toast = useToast();
-  const { user } = useAuth();
-  const { control, handleSubmit } = useForm<FormDataProps>({
+  const { user, updateUserProfile } = useAuth();
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormDataProps>({
     defaultValues: {
       name: user.name,
       email: user.email,
     },
+    resolver: yupResolver(profileSchema),
   });
 
   async function handleUserPhotoSelect() {
@@ -75,7 +106,47 @@ export function Profile() {
   }
 
   async function handleProfileUpdate(data: FormDataProps) {
-    console.log(data);
+    try {
+      setIsUpdating(true);
+
+      const userUpdated = user;
+      userUpdated.name = data.name;
+
+      await api.put('/users', data);
+
+      await updateUserProfile(userUpdated);
+
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            action="success"
+            title="Perfil atualizado com sucesso!"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível atualizar os dados. Tente novamente mais tarde.';
+
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            action="error"
+            title={title}
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   }
 
   return (
@@ -101,6 +172,7 @@ export function Profile() {
                   bg="$gray600"
                   onChangeText={onChange}
                   value={value}
+                  errorMessage={errors.name?.message}
                 />
               )}
             />
@@ -148,6 +220,7 @@ export function Profile() {
                   bg="$gray600"
                   secureTextEntry
                   onChangeText={onChange}
+                  errorMessage={errors.password?.message}
                 />
               )}
             />
@@ -160,12 +233,17 @@ export function Profile() {
                   placeholder="Confirme a nova senha"
                   bg="$gray600"
                   secureTextEntry
+                  errorMessage={errors.confirm_password?.message}
                   onChangeText={onChange}
                 />
               )}
             />
 
-            <Button title="Atualizar" onPress={handleSubmit(handleProfileUpdate)} />
+            <Button
+              title="Atualizar"
+              onPress={handleSubmit(handleProfileUpdate)}
+              isLoading={isUpdating}
+            />
           </Center>
         </Center>
       </ScrollView>
